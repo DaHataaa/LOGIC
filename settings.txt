@@ -1,0 +1,5 @@
+resolution='480p'
+speed_limit=False
+fullscreen=False
+bg_color=(255,255,255)
+connection=False
