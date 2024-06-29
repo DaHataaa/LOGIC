@@ -1,11 +1,13 @@
-ver = '1.0.2'
+ver = '1.1.1'
 import pygame
 import time
 import os
 import files_module as f_m
-import requests
 import threading
 import urllib
+import requests
+
+
 
 def start_timer():
 	global start_time
@@ -87,7 +89,8 @@ time_ratio = round(physics_fps / current_fps,4)
 
 
 ver_url = 'https://raw.githubusercontent.com/DaHataaa/LOGIC_SERVER/main/version'
-code_url = 'https://raw.githubusercontent.com/DaHataaa/LOGIC_SERVER/main/logic.py'
+rep_url = 'https://raw.githubusercontent.com/DaHataaa/LOGIC_SERVER/main/'
+online_maps_url = 'https://raw.githubusercontent.com/DaHataaa/LOGIC_SERVER/main/online%20maps/'
 
 
 
@@ -102,9 +105,10 @@ k_e = False
 k_v = False
 k_x = False
 k_d = False
-k_h = False
 mouse_touching_l = False
 mouse_touching_r = False
+
+help_i = 0
 
 selecting_step = 0
 
@@ -121,12 +125,12 @@ sq_size = 20
 help_text = ['w,a,s,d - Block directions',
 			 '1-8 - Block chosing',
 			 'LMB - Place block',
-			 'RMB - Navigation',
+			 'RMB (hold) - Navigation',
 			 'Mouse Wheel - Scale',
 			 'R - Remove block',
 			 'Space - Play/Pause',
-			 'ESC - menu',
-			 'E - Select and copy area to clipboard',
+			 'ESC - Menu',
+			 'E (hold) - Select and copy area to clipboard',
 			 'Ctrl+V - Paste area from clipboard',
 			 'Ctrl+X - Cut selected area',
 			 'Ctrl+D - Clear clipboard (Deselect)',
@@ -211,6 +215,20 @@ def get_maps_names():
 		names[i] = names[i].replace('\n','')
 	return names
 
+def get_online_maps_names():
+	try:
+		os.mkdir('data/online_maps')
+	except:
+		1
+	download_git(online_maps_url+'online_maps_list.txt','data/online_maps/online_maps_list.txt')
+	
+	online_names = open('data/online_maps/online_maps_list.txt','r',encoding='utf8').readlines()
+	for i in range(len(online_names)):
+		online_names[i] = online_names[i].replace('\n','')
+	return online_names
+	
+
+
 
 
 def clear_field():
@@ -233,28 +251,6 @@ def clear_field():
 
 
 
-class online_maps():
-	global maps_link
-	global names_online
-
-	maps_link = 'https://docs.google.com/document/d/1wiiccRBexr-W51tt0p79T8n7SaZbSyqEkTyiRFi0Zxs/edit?usp=sharing'
-	def get_names():
-		global names_online
-		global doc
-
-		names_online = []
-
-		doc = requests.get(maps_link).text.split('|')
-		
-		online_maps_count = int(doc[doc.index('maps_count')+1])
-
-		for i in range(online_maps_count):
-			names_online.append(doc[doc.index('map'+str(i))+1])
-
-	def load_online_map(map_name):
-		map_text = doc[doc.index(map_name)+1].split()
-		for i in range(len(map_text)):
-			print(map_text[i])
 
 
 def download_git(url,name):
@@ -286,23 +282,15 @@ class menu():
 
 		if connection:
 			try:
-				os.remove('actual_ver.txt')
+				os.remove('data/actual_ver.txt')
+				os.remove('data/online_maps/online_maps_list.txt')
 			except:
 				1
-			download_git(ver_url,'actual_ver.txt')
-			actual_ver = open('actual_ver.txt','r').readlines()[0].replace('\n','')
-
-			get_names_thr = threading.Thread(target=online_maps.get_names)
-			get_names_thr.start()
-		else:
-			names_online = ['Offline mode']
-
-			
-
+			names_online = get_online_maps_names()
+			download_git(ver_url,'data/actual_ver.txt')
+			actual_ver = open('data/actual_ver.txt','r').readlines()[0].replace('\n','')
 
 		names = get_maps_names()
-
-		
 
 		def menu_interface_and_events():
 
@@ -322,9 +310,10 @@ class menu():
 
 
 
-			textout(xx//4*3+10*screen_k,62*screen_k,int(20*screen_k),cl_black,'Local maps:')
-			textout(xx//4*3+10*screen_k,yy//2+35*screen_k,int(20*screen_k),cl_black,'Online maps:')
-			textout(xx//4*3+10*screen_k,yy//2+10*screen_k,int(10*screen_k),cl_black,'LMC-Choose map | RMC-Delete map')
+			textout(xx//2+10*screen_k,62*screen_k,int(20*screen_k),cl_black,'Local maps:')
+			textout(xx//4*3+10*screen_k,62*screen_k,int(20*screen_k),cl_black,'Online maps:')
+			textout(xx//2+10*screen_k,yy-14*screen_k,int(10*screen_k),cl_black,'LMC-Choose map | RMC-Delete map')
+			textout(xx//4*3+10*screen_k,yy-14*screen_k,int(10*screen_k),cl_black,'LMC-Choose map')
 			menu_text = ['Start empty','Continue','Quit','','','','','','','','','']
 			if connection:
 				if actual_ver != ver:
@@ -341,11 +330,17 @@ class menu():
 							for i in range(256):
 								field[i] = ['0']*256
 							menu_running = False
+							linee = ''
 						elif menu_text[i] == 'Continue':
 							menu_running = False
 						elif menu_text[i].split()[0] == 'Update':
+							rect(10*screen_k,62*screen_k+i*34*screen_k,(xx//2),int(25*screen_k),cl_white,0)
+							textout(10*screen_k,62*screen_k+i*34*screen_k,int(20*screen_k),cl_red,'Updating...')
+							pygame.display.flip()
 							os.remove('logic.py')
-							download_git(code_url,'logic.py')
+							os.remove('files_module.py')
+							download_git(rep_url+'logic.py','logic.py')
+							download_git(rep_url+'files_module.py','files_module.py')
 							time.sleep(1)
 							os.startfile('logic.py')
 							1/0
@@ -353,43 +348,44 @@ class menu():
 				else:
 					textout(10*screen_k,62*screen_k+i*34*screen_k,int(20*screen_k),cl_black,menu_text[i])
 
+			line(xx//2,50*screen_k,xx//2,yy,cl_black,2)
 			line(xx//4*3,50*screen_k,xx//4*3,yy,cl_black,2)
-			line(xx//4*3,yy//2+25*screen_k,xx,yy//2+25*screen_k,cl_black,2)
 
 			for i in range(len(names)):
-				if mouse_x >= xx//4*3+10*screen_k and mouse_x < xx and mouse_y >= 102*screen_k+i*20*screen_k and mouse_y < 102*screen_k+i*20*screen_k+20*screen_k:
-					textout(xx//4*3+10*screen_k,102*screen_k+i*20*screen_k,int(12*screen_k),cl_red,names[i])
+				if mouse_x >= xx//2+10*screen_k and mouse_x < xx//4*3 and mouse_y >= 95*screen_k+i*20*screen_k and mouse_y < 95*screen_k+i*20*screen_k+20*screen_k:
+					textout(xx//2+10*screen_k,95*screen_k+i*20*screen_k,int(12*screen_k),cl_red,names[i])
 					if mouse_touching_l:
-						rect(xx//4*3+10*screen_k,102*screen_k,xx//4,yy//3*2,cl_white,0)
-						textout(xx//4*3+10*screen_k,102*screen_k+i*20*screen_k,int(12*screen_k),cl_red,'Loading...')
+						rect(xx//2+10*screen_k,95*screen_k,xx//4-11*screen_k,yy//3*2,cl_white,0)
+						textout(xx//2+10*screen_k,95*screen_k+i*20*screen_k,int(12*screen_k),cl_red,'Loading...')
 						pygame.display.flip()
 						clear_field()
 						field,field_l = f_m.load_map(names[i])
 						menu_running = False
 						linee = names[i]
 					if mouse_touching_r:
+						mouse_touching_r = False
 						f_m.delete_map(names[i])
 						names = get_maps_names()
+						break
 				else:
-					textout(xx//4*3+10*screen_k,102*screen_k+i*20*screen_k,int(12*screen_k),cl_black,names[i])
+					textout(xx//2+10*screen_k,95*screen_k+i*20*screen_k,int(12*screen_k),cl_black,names[i])
 
 
 
-			if len(names_online) == 0:
-				textout(xx//4*3+10*screen_k,yy//2+74*screen_k,int(12*screen_k),cl_black,'Loading...')
 			for i in range(len(names_online)):
-				if mouse_x >= xx//4*3+10*screen_k and mouse_x < xx and mouse_y >= yy//2+74*screen_k+i*20*screen_k and mouse_y < yy//2+74*screen_k+i*20*screen_k+20*screen_k:
-					textout(xx//4*3+10*screen_k,yy//2+74*screen_k+i*20*screen_k,int(12*screen_k),cl_red,'Not available yet!')
-					if mouse_touching_l and 0:
-						rect(xx//4*3+10*screen_k,yy//2+74*screen_k,xx//4,yy//3*2,cl_white,0)
-						textout(xx//4*3+10*screen_k,yy//2+74*screen_k+i*20*screen_k,int(12*screen_k),cl_red,'Loading...')
+				if mouse_x >= xx//4*3+10*screen_k and mouse_x < xx and mouse_y >= 95*screen_k+i*20*screen_k and mouse_y < 95*screen_k+i*20*screen_k+20*screen_k:
+					textout(xx//4*3+10*screen_k,95*screen_k+i*20*screen_k,int(12*screen_k),cl_red,names_online[i])
+					if mouse_touching_l:
+						rect(xx//4*3+10*screen_k,95*screen_k,xx//4-11*screen_k,yy//3*2,cl_white,0)
+						textout(xx//4*3+10*screen_k,95*screen_k+i*20*screen_k,int(12*screen_k),cl_red,'Loading...')
 						pygame.display.flip()
 						clear_field()
-						field,field_l = online_maps.load_online_map(names_online[i])
+						download_git(online_maps_url+names_online[i].replace(' ','%20')+'.mp','data/online_maps/'+names_online[i]+'.mp')
+						field,field_l = f_m.load_online_map(names_online[i])
 						menu_running = False
 						linee = names_online[i]
 				else:
-					textout(xx//4*3+10*screen_k,yy//2+74*screen_k+i*20*screen_k,int(12*screen_k),cl_black,names_online[i])
+					textout(xx//4*3+10*screen_k,95*screen_k+i*20*screen_k,int(12*screen_k),cl_black,names_online[i])
 
 
 		
@@ -418,8 +414,6 @@ class menu():
 				if event.type == pygame.KEYDOWN:
 					if event.key == pygame.K_LCTRL:
 						k_ctrl = True
-					if event.key == pygame.K_q:
-						1 / 0
 
 
 				if event.type == pygame.MOUSEBUTTONDOWN:
@@ -428,7 +422,6 @@ class menu():
 
 					if event.button == 3:
 						mouse_touching_r = True
-
 
 				if event.type == pygame.MOUSEBUTTONUP:
 					if event.button == 1:
@@ -490,6 +483,7 @@ def main_func():
 				elif k_r:
 					field[calc_iy][calc_ix] = '0'
 					field_l[calc_iy][calc_ix] = 0
+
 				if field[iy][ix] != '0':
 					fs = field[iy][ix].split('_')
 					block = blocks_png[blocks.index(fs[0])]['ft'.index(fs[1][0])]['urld'.index(fs[1][1])]
@@ -524,18 +518,25 @@ def main_func():
 		if i == blocks_i:
 			rect(xx-78*screen_k,22*screen_k+55*screen_k*i,56*screen_k,56*screen_k,cl_black,2)
 
+	if connector_i == 0:
+		circle(xx-50*screen_k,215*screen_k,cl_black,8*screen_k)
 
 
-	if k_h:
-		rect(xx//2-160*screen_k,yy//2-140*screen_k,320*screen_k,280*screen_k,cl_white,0)
-		rect(xx//2-160*screen_k,yy//2-140*screen_k,320*screen_k,280*screen_k,cl_black,2)
+
+	if help_i:
+		rect(xx//2-170*screen_k,yy//2-140*screen_k,340*screen_k,280*screen_k,cl_white,0)
+		rect(xx//2-170*screen_k,yy//2-140*screen_k,340*screen_k,280*screen_k,cl_black,2)
 		for i in range(len(help_text)):
-			textout(xx//2-160*screen_k+10,yy//2-135*screen_k+i*18*screen_k,int(12*screen_k),cl_black,help_text[i])
+			textout(xx//2-170*screen_k+10,yy//2-135*screen_k+i*18*screen_k,int(12*screen_k),cl_black,help_text[i])
 	
 
 	textout(xx-80*screen_k,yy-20*screen_k,int(12*screen_k),cl_black,'help - h')
 
 	textout(xx-70*screen_k,6*screen_k,int(8*screen_k),cl_black,str(current_fps)+' fps')
+
+	rect(0,0,130*screen_k,14*screen_k,cl_white,0)
+	rect(0,0,130*screen_k,14*screen_k,cl_black,2)
+	textout(5*screen_k,0,int(10*screen_k),cl_black,linee)
 
 	if not(do_logic):
 		textout(xx//2-70*screen_k,yy-40*screen_k,int(22*screen_k),cl_black,'PAUSED')
@@ -605,10 +606,15 @@ def logic():
 						if field_splited[4] == '1':
 							field_l_buf[int(field_splited[3])][int(field_splited[2])] += int(bool(value))
 						else:
-							field_l_buf[iy-1][ix] += int(bool(value))
-							field_l_buf[iy][ix+1] += int(bool(value))
-							field_l_buf[iy][ix-1] += int(bool(value))
-							field_l_buf[iy+1][ix] += int(bool(value))
+							if direction == 'u':
+								field_l_buf[iy-1][ix] += int(bool(value))
+							elif direction == 'r':
+								field_l_buf[iy][ix+1] += int(bool(value))
+							elif direction == 'l':
+								field_l_buf[iy][ix-1] += int(bool(value))
+							else:
+								field_l_buf[iy+1][ix] += int(bool(value))
+
 
 
 
@@ -759,6 +765,7 @@ def type_name():
 		rect(xx//4,yy//7*3,xx//2,yy//7,cl_white,0)
 		rect(xx//4,yy//7*3,xx//2,yy//7,cl_black,2)
 		textout(xx//4+10*screen_k,yy//7*3+18*screen_k,int(22*screen_k),cl_black,'Save as:   '+line)
+		textout(xx//4+25*screen_k,yy//7*3+45*screen_k,int(7*screen_k),cl_black,'Max - 16 symbols')
 
 		
 		for event in pygame.event.get():
@@ -766,12 +773,13 @@ def type_name():
 				1 / 0
 			if event.type == pygame.KEYDOWN:
 				for i in range(len(symbols)):
-					if event.key == symbols[i][0]:
-						if (caps ^ shift):
-							s = symbols[i][1]
-							line += s.upper()
-						else:
-							line += symbols[i][1]
+					if len(line) != 16:
+						if event.key == symbols[i][0]:
+							if (caps ^ shift):
+								s = symbols[i][1]
+								line += s.upper()
+							else:
+								line += symbols[i][1]
 
 				
 
@@ -892,12 +900,16 @@ while running:
 					direction = 'r'
 			if event.key == pygame.K_s:
 				if k_ctrl:
-					if k_alt:
+					if k_alt or linee == '':
 						linee = type_name()
+
 					if linee != -1:
+						textout(xx//2-70*screen_k,yy-40*screen_k,int(22*screen_k),cl_black,'SAVING...')
+						pygame.display.flip()
 						f_m.save_map(field,linee)
-					textout(xx//2-70*screen_k,yy-40*screen_k,int(22*screen_k),cl_black,'SAVING...')
-					pygame.display.flip()
+					else:
+						linee = ''
+					
 				else:
 					direction = 'd'
 
@@ -905,9 +917,7 @@ while running:
 				k_r = True
 
 			if event.key == pygame.K_h:
-				k_h = True
-			if event.key == pygame.K_q:
-				1 / 0
+				help_i ^= 1
 
 			if event.key == pygame.K_1:
 				blocks_i = 0
@@ -948,9 +958,6 @@ while running:
 
 			if event.key == pygame.K_r:
 				k_r = False
-
-			if event.key == pygame.K_h:
-				k_h = False
 
 
 
