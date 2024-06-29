@@ -21,6 +21,26 @@ def load_map(map_name):
 
 	return field,field_l
 
+def load_online_map(map_name):
+
+	f = open('data/online_maps/'+map_name+'.mp','r').readlines()
+
+	field = [0]*256
+	for i in range(256):
+		field[i] = ['0']*256
+
+	field_l = [0]*256
+	for i in range(256):
+		field_l[i] = [0]*256
+
+	for iy in range(256):
+		for ix in range(256):
+			field[iy][ix] = f[iy].split()[ix].replace('\n','')
+			if field[iy][ix] != '0':
+				field_l[iy][ix] = int(field[iy][ix].split('_')[1][0]=='t')
+
+	return field,field_l
+
 
 def save_map(field,map_name):
 	f = open('data/maps/'+map_name+'.mp','w')
